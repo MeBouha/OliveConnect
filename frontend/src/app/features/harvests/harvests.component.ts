@@ -26,7 +26,7 @@ import { Harvest, Orchard } from '../../core/models';
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Type</mat-label>
-          <mat-select [(ngModel)]="form.type"><mat-option value="PLANNED">Planifiée</mat-option><mat-option value="ACTUAL">Réelle</mat-option></mat-select>
+          <mat-select [(ngModel)]="form.type"><mat-option value="PLANNED">Planifiée</mat-option><mat-option value="URGENT">Urgente</mat-option></mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline"><mat-label>Notes</mat-label><input matInput [(ngModel)]="form.notes" /></mat-form-field>
       </div>

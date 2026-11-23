@@ -70,7 +70,7 @@ export interface Harvest {
   id?: string;
   orchardId: string;
   farmerId?: string;
-  type: 'ACTUAL' | 'PLANNED';
+  type: 'PLANNED' | 'URGENT';
   status: 'REQUESTED' | 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   requestedDate?: string;
   plannedDate?: string;
