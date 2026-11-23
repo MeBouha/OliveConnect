@@ -1,0 +1,20 @@
+[Unit]
+Description=OliveConnect Spring Boot backend
+After=network.target mongod.service
+Wants=mongod.service
+
+[Service]
+Type=simple
+User=oliveconnect
+Group=oliveconnect
+WorkingDirectory=/opt/oliveconnect
+EnvironmentFile=-/etc/default/oliveconnect
+ExecStart=/usr/bin/java -jar /opt/oliveconnect/app.jar
+SuccessExitStatus=143
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

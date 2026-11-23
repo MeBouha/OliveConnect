@@ -64,6 +64,19 @@ services:
       timeout: 5s
       retries: 10
 
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: oliveconnect-prometheus
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - oliveconnect
+
 volumes:
   mongo-data:
 

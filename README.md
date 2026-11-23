@@ -76,13 +76,13 @@ Angular dev URL: http://localhost:4200. `environment.ts` points to `http://local
 
 ```bash
 cd backend && ./mvnw verify
-cd frontend && npm ci && npx ng test --watch=false --code-coverage && npx ng build --configuration production
+cd frontend && npm ci && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage && npx ng build --configuration production
 ```
 
-Repository tests and the full E2E test use Testcontainers and are automatically skipped when Docker is unavailable. Cypress e2e requires the app to be running:
+Backend unit tests use Mockito and do not require Docker. Frontend unit tests require Chrome/Chromium and use the `ChromeHeadlessNoSandbox` launcher from `karma.conf.js`. Cypress e2e requires the app to be running; install the Cypress binary first because the repository lockfile is generated with binary download skipped in this environment:
 
 ```bash
-cd frontend && npx cypress run
+cd frontend && npx cypress install && npm run e2e
 ```
 
 ## Bare-metal deployment on Ubuntu 22.04 (target < 30 min)
@@ -155,6 +155,8 @@ mongorestore --gzip --db oliveconnect --drop /var/backups/oliveconnect/<archive>
 
 - `GET /actuator/health` — liveness/readiness.
 - `GET /actuator/metrics` — JVM and HTTP metrics.
+- `GET /actuator/prometheus` — Prometheus exposition format.
+- Compose service `prometheus` at http://localhost:9090 — scrapes the backend every 15 seconds using `infra/prometheus.yml`.
 - Admin UI at `/admin/status` — uptime, heap and request count, sourced from Spring Actuator through the authenticated backend.
 
 ## Documentation
