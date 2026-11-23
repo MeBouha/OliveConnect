@@ -1,0 +1,236 @@
+@startuml OliveConnect
+title OliveConnect — Diagramme de classes
+
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam packageStyle rect
+
+class User {
+  +String id
+  +String email
+  +String passwordHash
+  +String fullName
+  +String phone
+  +Role role
+  +boolean active
+  +Instant createdAt
+}
+
+class Orchard {
+  +String id
+  +String farmerId
+  +String name
+  +GeoJsonPoint geometry
+  +double areaHa
+  +String variety
+  +List<Plot> plots
+  +Instant createdAt
+}
+
+class Plot {
+  +String plotId
+  +String name
+  +double areaHa
+}
+
+class GeoJsonPoint <<value object>> {
+  +String type = "Point"
+  +double[] coordinates
+}
+
+class MaturityReading {
+  +String id
+  +String orchardId
+  +int level
+  +MaturitySource source
+  +Instant recordedAt
+}
+
+class Harvest {
+  +String id
+  +String orchardId
+  +String farmerId
+  +HarvestType type
+  +HarvestStatus status
+  +Instant requestedDate
+  +Instant plannedDate
+  +Instant actualHarvestDate
+  +double quantityKg
+  +String notes
+  +String tourId
+  +Instant createdAt
+}
+
+class Alert {
+  +String id
+  +String orchardId
+  +String farmerId
+  +AlertType type
+  +String description
+  +GeoJsonPoint location
+  +AlertStatus status
+  +Instant createdAt
+  +Instant resolvedAt
+  +String resolvedBy
+}
+
+class Tour {
+  +String id
+  +String code
+  +Instant plannedDate
+  +String teamLeaderId
+  +TourStatus status
+  +List<String> harvestIds
+  +List<String> resourceIds
+  +Instant createdAt
+}
+
+class Resource {
+  +String id
+  +ResourceType type
+  +String name
+  +double capacity
+  +Instant availableFrom
+  +Instant availableTo
+  +ResourceStatus status
+}
+
+class Press {
+  +String id
+  +String name
+  +GeoJsonPoint location
+  +double capacityKgPerDay
+  +double currentLoadKg
+  +Instant lastUpdated
+}
+
+class PressReceipt {
+  +String id
+  +String harvestId
+  +String pressId
+  +double weightKg
+  +QualityGrade qualityGrade
+  +Instant receivedAt
+  +String receivedBy
+}
+
+class Notification {
+  +String id
+  +String userId
+  +String title
+  +String message
+  +boolean read
+  +Instant createdAt
+  +String relatedEntityId
+}
+
+class ImportLog {
+  +String id
+  +String source
+  +int recordsImported
+  +int recordsRejected
+  +Instant startedAt
+  +Instant finishedAt
+  +ImportStatus status
+}
+
+enum Role {
+  VISITOR
+  FARMER
+  COLLECTION_MANAGER
+  TEAM_LEADER
+  LOGISTICS_MANAGER
+  PRESS_MANAGER
+  ADMIN
+}
+
+enum HarvestType {
+  PLANNED
+  URGENT
+}
+
+enum HarvestStatus {
+  REQUESTED
+  VALIDATED
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AlertType {
+  MATURITY_OPTIMAL
+  RAIN
+  PEST
+  OTHER
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum TourStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ResourceType {
+  WORKER
+  TRACTOR
+  BIN
+  EQUIPMENT
+}
+
+enum ResourceStatus {
+  AVAILABLE
+  BOOKED
+  MAINTENANCE
+}
+
+enum MaturitySource {
+  SENSOR
+  MANUAL
+  WEATHER
+}
+
+enum QualityGrade {
+  A
+  B
+  C
+}
+
+enum ImportStatus {
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+User "1" -- "*" Orchard : farmerId >
+User "1" -- "*" Harvest : farmerId >
+User "1" -- "*" Alert : farmerId >
+User "0..1" -- "*" Alert : resolvedBy >
+User "1" -- "*" Tour : teamLeaderId >
+User "1" -- "*" Notification : userId >
+User "0..1" -- "*" PressReceipt : receivedBy >
+
+Orchard "1" *-- "*" Plot : plots (embedded >
+Orchard "1" -- "*" MaturityReading : orchardId >
+Orchard "1" -- "*" Harvest : orchardId >
+Orchard "1" -- "*" Alert : orchardId >
+
+Harvest "0..1" -- "0..1" Tour : tourId >
+Harvest "1" -- "0..1" PressReceipt : harvestId <
+Tour "1" o-- "0..30" Harvest : harvestIds >
+Tour "1" o-- "*" Resource : resourceIds >
+Press "1" -- "*" PressReceipt : pressId <
+
+Orchard ..> GeoJsonPoint : geometry >
+Alert ..> GeoJsonPoint : location >
+Press ..> GeoJsonPoint : location >
+
+@enduml
