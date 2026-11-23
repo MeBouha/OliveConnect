@@ -1,0 +1,28 @@
+# Build outputs
+target/
+dist/
+coverage/
+.angular/
+*.log
+
+# Dependencies
+node_modules/
+.npm/
+.nvm/
+.cypress/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Runtime data and secrets
+.env
+*.local
+infra/mongo-data/
+backups/
+
+# Git
+.git.bak/
