@@ -108,13 +108,66 @@ Le contrat complet est également fourni dans `docs/api/postman_collection.json`
 - `Harvest.status` utilise `REQUESTED, VALIDATED, PLANNED, IN_PROGRESS, COMPLETED, CANCELLED` ; `Tour.status` utilise uniquement `PLANNED, IN_PROGRESS, COMPLETED, CANCELLED`.
 - Une récolte ne peut être modifiée ou annulée par le cultivateur que tant que le statut est `REQUESTED`, `VALIDATED` ou `PLANNED` et que la tournée associée n'a pas démarré.
 
-## 7. Tests et déploiement
+## 7. Implémentation des chantiers
 
-Les sections détaillées tests, déploiement et supervision sont tenues à jour dans les étapes finales de ce rapport et dans le `README.md`. Les commandes de référence sont :
+### 7.1 F1 — Vergers, récoltes et tournées
+
+Les endpoints `/api/orchards`, `/api/harvests` et `/api/tours` exposent les opérations CRUD et les transitions métier. Les services appliquent l'appartenance `farmerId`, la validation des dates, l'unicité du code tournée et l'interdiction de modifier une récolte dont la tournée a démarré. `POST /api/harvests/{id}/assign-tour` crée la tournée et réserve les ressources cochées ; `TourService` refuse deux tournées qui utilisent la même ressource sur des plages qui se chevauchent.
+
+### 7.2 F2 — Alertes et notifications
+
+Les alertes sont géolocalisées avec un `Point` GeoJSON et suivent le cycle `OPEN → IN_PROGRESS → RESOLVED`. `AlertService` restreint la lecture au cultivateur propriétaire pour `FARMER`, tandis que les rôles de coordination voient la file globale. Chaque changement de statut crée une `Notification` indexée par utilisateur, avec purge TTL à 90 jours.
+
+### 7.3 F3 — Ressources, disponibilité et stocks
+
+`ResourceService` gère le CRUD des ressources et `GET /api/resources/availability` filtre par type et plage temporelle. `GET /api/resources/supplies` calcule les niveaux de stock et les seuils de réapprovisionnement. Les pressoirs exposent leur capacité journalière et leur charge courante ; les réceptions alimentent `press_receipts` et mettent à jour la charge.
+
+### 7.4 F4 — Cartographie
+
+La carte Angular utilise Leaflet. La couche publique appelle `GET /api/orchards/map?bbox=...` sans JWT et affiche uniquement les champs projetés. Les marqueurs sont regroupés côté client pour rester lisibles à 500 vergers. La vue privée ajoute le détail des parcelles embarquées et le dernier niveau de maturité.
+
+### 7.5 F5 — Tableau de bord
+
+`GET /api/dashboard/kpis` s'appuie sur quatre pipelines `MongoTemplate` : rendement par verger avec `$lookup`, délai moyen de collecte calculé par `$subtract`, taux de remplissage des bacs par somme des capacités, et alertes résolues par semaine ISO via `$dateToString`. Les filtres `from`, `to`, `orchardId` et le périmètre utilisateur sont appliqués dans le premier `$match`. Le composant Chart.js consomme directement le contrat TypeScript `DashboardKpis`.
+
+### 7.6 Imports simulés et administration
+
+`ImportScheduler` exécute toutes les dix minutes un scénario `weather-json` et un scénario `maturity-sensor-csv`, également déclenchables par `POST /api/admin/imports/trigger`. Les lignes invalides sont rejetées sans interrompre le lot ; chaque exécution produit un `ImportLog` `SUCCESS` ou `PARTIAL`. `GET /api/admin/status` expose l'uptime, la mémoire JVM, le compteur de requêtes et l'état MongoDB.
+
+## 8. Sécurité
+
+L'authentification JWT est appliquée par `JwtAuthenticationFilter` ; les mots de passe sont hashés BCrypt. Les contrôleurs portent `@PreAuthorize` par rôle et les services vérifient l'appartenance des ressources : un token volé ou un identifiant modifié ne suffit pas à accéder aux données d'un autre cultivateur. Les erreurs sont normalisées par `GlobalExceptionHandler` en `{timestamp, status, error, message, path}`. La validation Jakarta est appliquée sur tous les DTO entrants. Actuator n'expose que `health`, `info`, `metrics` et `prometheus`.
+
+## 9. Tests
+
+### 9.1 Backend
+
+Les tests unitaires Mockito couvrent `OrchardService`, `TourService`, `HarvestService`, `AlertService`, `ResourceService` et `ImportScheduler`. `SecurityContextHelper` est mocké statiquement pour tester les chemins avec et sans périmètre utilisateur. Le scénario d'import invalide vérifie qu'une ligne erronée produit un statut `PARTIAL` et que les lignes valides sont tout de même persistées.
+
+### 9.2 Frontend
+
+Les specs Karma couvrent le shell `AppComponent`, le décodage JWT et le stockage du token dans `ApiService`, ainsi que le chargement des KPI et la gestion d'erreur du dashboard. `ChromeHeadlessNoSandbox` est configuré dans `frontend/karma.conf.js` avec les drapeaux `--no-sandbox --disable-gpu --disable-dev-shm-usage`. Les specs Cypress couvrent le login et la page d'aide ; le binaire Cypress n'étant pas installé dans l'environnement de préparation, la commande locale est `npx cypress install && npm run e2e`.
+
+### 9.3 Commandes et résultats
 
 ```bash
-./mvnw verify
-npx ng test --watch=false --code-coverage
-npx ng build --configuration production
+cd backend && ./mvnw.cmd -q verify
+cd frontend && npm run build
+cd frontend && npm test -- --watch=false --browsers=ChromeHeadlessNoSandbox --no-progress
+cd frontend && npx cypress install && npm run e2e
 docker compose up --build
 ```
+
+`mvnw verify`, `npm run build` et les tests unitaires Angular passent dans l'environnement de préparation. Les tests Cypress et la stack Docker n'ont pas pu être exécutés localement : le binaire Cypress a été ignoré lors de l'installation et Docker n'est pas installé.
+
+## 10. Déploiement et supervision
+
+`backend/Dockerfile` construit l'application avec Maven 3.9.9 puis l'exécute dans un JRE Eclipse Temurin 21 Alpine sous l'utilisateur `oliveconnect`, avec un healthcheck HTTP. `infra/frontend.Dockerfile` compile Angular avec Node 22 puis sert `dist/frontend/browser` via Nginx 1.27 Alpine. `infra/nginx-docker.conf` reverse-proxie `/api/` vers `http://backend:8080` ; `infra/nginx.conf` fournit l'équivalent pour une installation Ubuntu 22.04 nue avec `infra/oliveconnect.service`. `scripts/backup.sh` archive MongoDB avec rétention. `infra/prometheus.yml` scrape `backend:8080/actuator/prometheus` dans Docker et `127.0.0.1:8080` en installation nue.
+
+## 11. Contrat d'API
+
+Le descripteur statique `docs/api/openapi.yaml` documente les chemins, paramètres, schémas, rôles et réponses d'erreur. La collection `docs/api/postman_collection.json` fournit un dossier par domaine, la variable `baseUrl`, l'authentification bearer et un script qui enregistre automatiquement le JWT renvoyé par `POST /api/auth/login`. Swagger UI reste disponible à `http://localhost:8080/swagger-ui.html` et le JSON généré à `http://localhost:8080/v3/api-docs` lorsque l'API est démarrée.
+
+## 12. Captures d'écran
+
+Les captures d'écran sont conservées dans `docs/screenshots/` : `login-desktop.png`, `login-mobile.png`, `map-desktop.png` et `help-desktop.png`. Elles illustrent la mise en page desktop 1360 × 900, le rendu responsive 360 px et la carte publique Leaflet. Le tableau de bord et les écrans authentifiés doivent être capturés après `docker compose up --build` et l'import du jeu de démonstration.
