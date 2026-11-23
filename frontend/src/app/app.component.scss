@@ -1,0 +1,27 @@
+.shell {
+  min-height: 100vh;
+}
+
+.brand {
+  padding: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2e7d32;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user {
+  margin-right: 12px;
+  font-size: 14px;
+}
+
+main {
+  padding: 24px;
+}
+
+a.active {
+  font-weight: 700;
+}

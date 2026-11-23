@@ -1,0 +1,36 @@
+<mat-sidenav-container class="shell">
+  <mat-sidenav #drawer mode="over">
+    <div class="brand">OliveConnect</div>
+    <mat-nav-list>
+      <a mat-list-item routerLink="/dashboard" routerLinkActive="active" (click)="drawer.close()">Tableau de bord</a>
+      <a mat-list-item routerLink="/map" routerLinkActive="active" (click)="drawer.close()">Carte des oliveraies</a>
+      <a mat-list-item routerLink="/orchards" routerLinkActive="active" (click)="drawer.close()">Oliveraies</a>
+      <a mat-list-item routerLink="/harvests" routerLinkActive="active" (click)="drawer.close()">Récoltes</a>
+      <a mat-list-item routerLink="/alerts" routerLinkActive="active" (click)="drawer.close()">Alertes</a>
+      <a mat-list-item routerLink="/tours" routerLinkActive="active" (click)="drawer.close()">Tournées</a>
+      <a mat-list-item routerLink="/resources" routerLinkActive="active" (click)="drawer.close()">Ressources</a>
+      <a mat-list-item routerLink="/presses" routerLinkActive="active" (click)="drawer.close()">Pressoirs</a>
+      <a mat-list-item routerLink="/notifications" routerLinkActive="active" (click)="drawer.close()">Notifications</a>
+      @if (canShow(['ADMIN'])) {
+        <a mat-list-item routerLink="/admin" routerLinkActive="active" (click)="drawer.close()">Administration</a>
+      }
+      <a mat-list-item routerLink="/help" routerLinkActive="active" (click)="drawer.close()">Aide</a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <mat-toolbar color="primary">
+      <button mat-button (click)="drawer.toggle()">Menu</button>
+      <span class="spacer"></span>
+      @if (user(); as currentUser) {
+        <span class="user">{{ currentUser.fullName }} · {{ currentUser.role }}</span>
+        <button mat-button (click)="logout()">Déconnexion</button>
+      } @else {
+        <a mat-button routerLink="/login">Connexion</a>
+      }
+    </mat-toolbar>
+    <main>
+      <router-outlet />
+    </main>
+  </mat-sidenav-content>
+</mat-sidenav-container>
