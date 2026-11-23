@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: oliveconnect
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://localhost:27017/oliveconnect}
+      auto-index-creation: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: always
+  mvc:
+    problemdetails:
+      enabled: false
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+  info:
+    app:
+      name: OliveConnect
+      version: 1.0.0
+
+jwt:
+  secret: ${JWT_SECRET:oliveconnect-local-development-secret-change-in-production}
+  expiration-ms: 86400000
+
+imports:
+  enabled: ${IMPORTS_ENABLED:true}
+  interval-ms: 600000
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+
+logging:
+  level:
+    tn.oliveconnect: INFO
+    org.springframework.security: WARN
