@@ -39,6 +39,9 @@ imports:
   enabled: ${IMPORTS_ENABLED:true}
   interval-ms: 600000
 
+logistics:
+  reorder-threshold: 5
+
 springdoc:
   api-docs:
     path: /v3/api-docs
