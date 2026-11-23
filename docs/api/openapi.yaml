@@ -1,0 +1,1080 @@
+openapi: 3.0.3
+info:
+  title: OliveConnect API
+  version: 1.0.0
+  description: API de coopérative pour la gestion des récoltes d'olives à Sfax.
+servers:
+  - url: http://localhost:8080
+    description: Local
+  - url: /api
+    description: Reverse proxy Nginx
+security:
+  - bearerAuth: []
+paths:
+  /api/auth/register:
+    post:
+      tags: [Authentication]
+      summary: Créer un compte
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: S'authentifier
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /api/auth/me:
+    get:
+      tags: [Authentication]
+      summary: Profil courant
+      responses:
+        '200':
+          description: Profil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+  /api/orchards/map:
+    get:
+      tags: [Orchards]
+      summary: Marqueurs publics dans une bounding box
+      security: []
+      parameters:
+        - name: bbox
+          in: query
+          schema:
+            type: string
+            default: 10.0,34.2,11.5,35.1
+      responses:
+        '200':
+          description: Marqueurs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrchardMapView'
+  /api/orchards:
+    get:
+      tags: [Orchards]
+      summary: Lister les oliveraies
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: farmerId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Page d'oliveraies
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrchardPage'
+    post:
+      tags: [Orchards]
+      summary: Créer une oliveraie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Orchard'
+      responses:
+        '201':
+          description: Oliveraie créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Orchard'
+  /api/orchards/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Orchards]
+      summary: Détail d'une oliveraie
+      responses:
+        '200':
+          description: Oliveraie
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Orchard'
+    put:
+      tags: [Orchards]
+      summary: Modifier une oliveraie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Orchard'
+      responses:
+        '200':
+          description: Oliveraie modifiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Orchard'
+    delete:
+      tags: [Orchards]
+      summary: Supprimer une oliveraie
+      responses:
+        '204':
+          description: Supprimée
+  /api/harvests:
+    get:
+      tags: [Harvests]
+      summary: Lister les récoltes
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [REQUESTED, VALIDATED, PLANNED, IN_PROGRESS, COMPLETED, CANCELLED]
+        - name: orchardId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Page de récoltes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HarvestPage'
+    post:
+      tags: [Harvests]
+      summary: Demander une récolte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Harvest'
+      responses:
+        '201':
+          description: Récolte créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Harvest'
+  /api/harvests/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Harvests]
+      summary: Détail d'une récolte
+      responses:
+        '200':
+          description: Récolte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Harvest'
+    put:
+      tags: [Harvests]
+      summary: Modifier une récolte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Harvest'
+      responses:
+        '200':
+          description: Récolte modifiée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Harvest'
+  /api/harvests/{id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Harvests]
+      summary: Annuler une récolte
+      responses:
+        '200':
+          description: Récolte annulée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Harvest'
+  /api/harvests/{id}/assign-tour:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Harvests]
+      summary: Planifier une tournée pour une récolte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TourAssignRequest'
+      responses:
+        '200':
+          description: Tournée créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+  /api/alerts:
+    get:
+      tags: [Alerts]
+      summary: Lister les alertes
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [OPEN, IN_PROGRESS, RESOLVED]
+      responses:
+        '200':
+          description: Page d'alertes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPage'
+    post:
+      tags: [Alerts]
+      summary: Créer une alerte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alert'
+      responses:
+        '201':
+          description: Alerte créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+  /api/alerts/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [Alerts]
+      summary: Changer le statut d'une alerte
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [OPEN, IN_PROGRESS, RESOLVED]
+      responses:
+        '200':
+          description: Alerte mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+  /api/tours:
+    get:
+      tags: [Tours]
+      summary: Lister les tournées
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page de tournées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TourPage'
+    post:
+      tags: [Tours]
+      summary: Créer une tournée
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tour'
+      responses:
+        '201':
+          description: Tournée créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+  /api/tours/{id}/progress:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [Tours]
+      summary: Mettre à jour l'avancement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [PLANNED, IN_PROGRESS, COMPLETED, CANCELLED]
+      responses:
+        '200':
+          description: Tournée mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+  /api/tours/{id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Tours]
+      summary: Annuler une tournée
+      responses:
+        '200':
+          description: Tournée annulée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tour'
+  /api/resources:
+    get:
+      tags: [Resources]
+      summary: Lister les ressources
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page de ressources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourcePage'
+    post:
+      tags: [Resources]
+      summary: Créer une ressource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Resource'
+      responses:
+        '201':
+          description: Ressource créée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+  /api/resources/availability:
+    get:
+      tags: [Resources]
+      summary: Ressources disponibles sur une période
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [WORKER, TRACTOR, BIN, EQUIPMENT]
+      responses:
+        '200':
+          description: Ressources disponibles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Resource'
+  /api/resources/supplies:
+    get:
+      tags: [Resources]
+      summary: Stocks et seuils de réapprovisionnement
+      responses:
+        '200':
+          description: Stocks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplyView'
+  /api/presses:
+    get:
+      tags: [Presses]
+      summary: Lister les pressoirs
+      responses:
+        '200':
+          description: Pressoirs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Press'
+  /api/presses/{id}/receipts:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Presses]
+      summary: Enregistrer une réception
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PressReceipt'
+      responses:
+        '200':
+          description: Réception enregistrée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PressReceipt'
+  /api/presses/{id}/capacity:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [Presses]
+      summary: Mettre à jour la capacité
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                capacityKgPerDay:
+                  type: number
+                currentLoadKg:
+                  type: number
+      responses:
+        '200':
+          description: Pressoir mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Press'
+  /api/notifications:
+    get:
+      tags: [Notifications]
+      summary: Lister les notifications
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page de notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+  /api/notifications/{id}/read:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [Notifications]
+      summary: Marquer comme lue
+      responses:
+        '200':
+          description: Notification mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+  /api/dashboard/kpis:
+    get:
+      tags: [Dashboard]
+      summary: KPIs calculés par agrégation MongoDB
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: orchardId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: KPIs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardKpis'
+  /api/admin/users:
+    get:
+      tags: [Administration]
+      summary: Lister les utilisateurs
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Page d'utilisateurs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPage'
+  /api/admin/users/{id}/role:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [Administration]
+      summary: Changer le rôle d'un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [VISITOR, FARMER, COLLECTION_MANAGER, TEAM_LEADER, LOGISTICS_MANAGER, PRESS_MANAGER, ADMIN]
+      responses:
+        '200':
+          description: Utilisateur mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /api/admin/imports/trigger:
+    post:
+      tags: [Administration]
+      summary: Déclencher un import
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source]
+              properties:
+                source:
+                  type: string
+                  enum: [weather-json, maturity-sensor-csv]
+      responses:
+        '202':
+          description: Import accepté
+  /api/admin/status:
+    get:
+      tags: [Administration]
+      summary: État du système
+      responses:
+        '200':
+          description: Statut
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uptimeSeconds:
+                    type: integer
+                    format: int64
+                  heapUsedMb:
+                    type: number
+                  heapMaxMb:
+                    type: number
+                  requestCount:
+                    type: number
+                  mongoStatus:
+                    type: string
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        default: 0
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        default: 20
+  schemas:
+    GeoJsonPoint:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type:
+          type: string
+          enum: [Point]
+        coordinates:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        role:
+          type: string
+        userId:
+          type: string
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    RegisterRequest:
+      type: object
+      required: [email, password, fullName, role]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        fullName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+    MeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+        active:
+          type: boolean
+    Orchard:
+      type: object
+      required: [name, geometry, areaHa, variety]
+      properties:
+        id:
+          type: string
+        farmerId:
+          type: string
+        name:
+          type: string
+        geometry:
+          $ref: '#/components/schemas/GeoJsonPoint'
+        areaHa:
+          type: number
+        variety:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    OrchardMapView:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        geometry:
+          $ref: '#/components/schemas/GeoJsonPoint'
+        areaHa:
+          type: number
+        variety:
+          type: string
+        maturityLevel:
+          type: integer
+          nullable: true
+        harvestStatus:
+          type: string
+          nullable: true
+    Harvest:
+      type: object
+      required: [orchardId, type, quantityKg]
+      properties:
+        id:
+          type: string
+        orchardId:
+          type: string
+        farmerId:
+          type: string
+        type:
+          type: string
+          enum: [PLANNED, URGENT]
+        status:
+          type: string
+          enum: [REQUESTED, VALIDATED, PLANNED, IN_PROGRESS, COMPLETED, CANCELLED]
+        requestedDate:
+          type: string
+          format: date-time
+        plannedDate:
+          type: string
+          format: date-time
+        actualHarvestDate:
+          type: string
+          format: date-time
+        quantityKg:
+          type: number
+        notes:
+          type: string
+        tourId:
+          type: string
+    Alert:
+      type: object
+      required: [orchardId, type, description, location]
+      properties:
+        id:
+          type: string
+        orchardId:
+          type: string
+        farmerId:
+          type: string
+        type:
+          type: string
+          enum: [MATURITY_OPTIMAL, RAIN, PEST, OTHER]
+        description:
+          type: string
+        location:
+          $ref: '#/components/schemas/GeoJsonPoint'
+        status:
+          type: string
+          enum: [OPEN, IN_PROGRESS, RESOLVED]
+        createdAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: string
+          format: date-time
+    Tour:
+      type: object
+      required: [code, plannedDate, teamLeaderId]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        plannedDate:
+          type: string
+          format: date-time
+        teamLeaderId:
+          type: string
+        status:
+          type: string
+          enum: [PLANNED, IN_PROGRESS, COMPLETED, CANCELLED]
+        harvestIds:
+          type: array
+          items:
+            type: string
+        resourceIds:
+          type: array
+          items:
+            type: string
+    TourAssignRequest:
+      type: object
+      required: [plannedDate, teamLeaderId]
+      properties:
+        code:
+          type: string
+        plannedDate:
+          type: string
+          format: date-time
+        teamLeaderId:
+          type: string
+        resourceIds:
+          type: array
+          items:
+            type: string
+    Resource:
+      type: object
+      required: [type, name, capacity]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [WORKER, TRACTOR, BIN, EQUIPMENT]
+        name:
+          type: string
+        capacity:
+          type: number
+        availableFrom:
+          type: string
+          format: date-time
+        availableTo:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [AVAILABLE, BOOKED, MAINTENANCE]
+    SupplyView:
+      type: object
+      properties:
+        type:
+          type: string
+        stockLevel:
+          type: number
+        reorderThreshold:
+          type: number
+        reorderNeeded:
+          type: boolean
+    Press:
+      type: object
+      required: [name, location, capacityKgPerDay]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        location:
+          $ref: '#/components/schemas/GeoJsonPoint'
+        capacityKgPerDay:
+          type: number
+        currentLoadKg:
+          type: number
+        lastUpdated:
+          type: string
+          format: date-time
+    PressReceipt:
+      type: object
+      required: [harvestId, weightKg, qualityGrade]
+      properties:
+        harvestId:
+          type: string
+        weightKg:
+          type: number
+        qualityGrade:
+          type: string
+          enum: [A, B, C]
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        relatedEntityId:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+        active:
+          type: boolean
+    DashboardKpis:
+      type: object
+      properties:
+        yieldPerOrchard:
+          type: array
+          items:
+            type: object
+            properties:
+              orchardId:
+                type: string
+              orchardName:
+                type: string
+              harvestedKg:
+                type: number
+              areaHa:
+                type: number
+              yieldKgPerHa:
+                type: number
+        averageCollectionDelayDays:
+          type: number
+        totalHarvestedKg:
+          type: number
+        totalReceivedKg:
+          type: number
+        totalBinCapacityKg:
+          type: number
+        binFillRate:
+          type: number
+        alertsResolvedPerWeek:
+          type: array
+          items:
+            type: object
+            properties:
+              week:
+                type: string
+              count:
+                type: integer
+                format: int64
+    OrchardPage:
+      allOf:
+        - $ref: '#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Orchard'
+    HarvestPage:
+      allOf:
+        - $ref: '#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Harvest'
+    AlertPage:
+      allOf:
+        - $ref: '#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Alert'
+    TourPage:
+      allOf:
+        - $ref: '#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Tour'
+    ResourcePage:
+      allOf:
+        - $ref: '#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Resource'
+    NotificationPage:
+      allOf:
+        - $ref: '#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Notification'
+    UserPage:
+      allOf:
+        - $ref: '#/components/schemas/PageResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+    PageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            type: object
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
