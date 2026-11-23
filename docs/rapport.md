@@ -171,3 +171,7 @@ Le descripteur statique `docs/api/openapi.yaml` documente les chemins, paramètr
 ## 12. Captures d'écran
 
 Les captures d'écran sont conservées dans `docs/screenshots/` : `login-desktop.png`, `login-mobile.png`, `map-desktop.png` et `help-desktop.png`. Elles illustrent la mise en page desktop 1360 × 900, le rendu responsive 360 px et la carte publique Leaflet. Le tableau de bord et les écrans authentifiés doivent être capturés après `docker compose up --build` et l'import du jeu de démonstration.
+
+## 13. Validation finale
+
+Le 23 novembre 2026, la chaîne de validation locale a été relancée intégralement. `backend/mvnw.cmd -q verify` réussit ; les journaux d'import simulé confirment les statuts `PARTIAL` attendus avec lignes valides importées et lignes invalides rejetées. `frontend/npm run build` réussit avec un bundle initial de 737,51 kB raw et 195,21 kB estimé transféré. `frontend/npm test -- --watch=false --browsers=ChromeHeadlessNoSandbox --no-progress` termine avec `TOTAL: 4 SUCCESS`. `docs/api/postman_collection.json` est un JSON valide et `docs/api/openapi.yaml` est un YAML valide. Quatre captures PNG sont présentes dans `docs/screenshots/`. Les seules vérifications non exécutées restent `npm run e2e` et `docker compose up --build`, respectivement à cause du binaire Cypress non installé et de l'absence de Docker dans l'environnement de préparation.
