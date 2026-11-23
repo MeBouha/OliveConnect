@@ -85,6 +85,7 @@ export interface Alert {
   orchardId: string;
   type: string;
   description: string;
+  location?: GeoJsonPoint;
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
   createdAt?: string;
   resolvedAt?: string;
