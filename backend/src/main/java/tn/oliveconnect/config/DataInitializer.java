@@ -93,8 +93,13 @@ public class DataInitializer {
       String[] varieties = {"Chemlali", "Chetoui", "Zalmati", "Oueslati"};
       for (int i = 0; i < 500; i++) {
         String orchardId = "orchard-" + String.format("%04d", i + 1);
-        double longitude = 10.42 + random.nextDouble() * 0.72;
-        double latitude = 34.52 + random.nextDouble() * 0.48;
+        double longitude;
+        double latitude;
+        do {
+          // Sfax hinterland; reject points east of the (approximate) Gulf of Gabès coastline.
+          longitude = 10.20 + random.nextDouble() * 0.90;
+          latitude = 34.52 + random.nextDouble() * 0.48;
+        } while (longitude > coastLongitude(latitude) - 0.03);
         List<Plot> plots = new ArrayList<>();
         int plotCount = 2 + random.nextInt(3);
         for (int p = 0; p < plotCount; p++) {
@@ -280,5 +285,10 @@ public class DataInitializer {
         .availableTo(Instant.now().plus(300, ChronoUnit.DAYS))
         .status(status)
         .build();
+  }
+
+  /** Approximate coastline longitude between Mahrès (34.52°N) and Jebiniana (35.0°N). */
+  private static double coastLongitude(double latitude) {
+    return 10.50 + (latitude - 34.52) * (0.55 / 0.48);
   }
 }

@@ -67,7 +67,9 @@ public class AdminService {
     String mongoStatus;
     try {
       Document ping = mongoTemplate.getDb().runCommand(new Document("ping", 1));
-      mongoStatus = ping.get("ok", 0) == 1 ? "UP" : "DOWN";
+      Object ok = ping.get("ok");
+      // Mongo replies {ok: 1.0} (a double), so compare numerically rather than as Integer.
+      mongoStatus = ok instanceof Number number && number.doubleValue() == 1.0 ? "UP" : "DOWN";
     } catch (RuntimeException exception) {
       mongoStatus = "DOWN";
     }
