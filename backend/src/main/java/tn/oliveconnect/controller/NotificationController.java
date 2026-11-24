@@ -2,7 +2,7 @@ package tn.oliveconnect.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import tn.oliveconnect.common.web.PageRequests;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -29,7 +29,7 @@ public class NotificationController {
   public PageResponse<Notification> findAll(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    Pageable pageable = PageRequest.of(page, size);
+    Pageable pageable = PageRequests.of(page, size);
     Page<Notification> result = notificationService.findAll(pageable);
     return PageResponse.of(result);
   }

@@ -3,7 +3,7 @@ package tn.oliveconnect.controller;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import tn.oliveconnect.common.web.PageRequests;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,7 +40,7 @@ public class AdminController {
   public PageResponse<User> users(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    Pageable pageable = PageRequest.of(page, size);
+    Pageable pageable = PageRequests.of(page, size);
     Page<User> result = adminService.findUsers(pageable);
     return PageResponse.of(result);
   }

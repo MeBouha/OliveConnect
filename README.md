@@ -30,13 +30,17 @@ Requirements: Docker Engine 24+ with Compose v2, 4 GB RAM.
 ```bash
 git clone <repository-url> OliveConnect
 cd OliveConnect
+cp .env.example .env
+sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
 docker compose up --build
 ```
+
+Compose refuses to start without `JWT_SECRET`, and the backend refuses secrets shorter than 32 bytes. (When using `infra/docker-compose.yml`, put the `.env` file in `infra/`.)
 
 - Frontend: http://localhost
 - Swagger UI: http://localhost:8080/swagger-ui.html
 - Health: http://localhost:8080/actuator/health
-- MongoDB: `mongodb://localhost:27017/oliveconnect`
+- MongoDB: `mongodb://localhost:27017/oliveconnect` (bound to 127.0.0.1 only)
 
 The API container seeds demo users, 500 geolocated orchards, maturity readings, tours and historical receipts on an empty database.
 
@@ -69,6 +73,8 @@ cd frontend
 npm ci
 npx ng serve
 ```
+
+`spring-boot:run` activates the `dev` profile, which supplies a local-only JWT secret. Packaged jars (Docker, systemd) have no default and require `JWT_SECRET`.
 
 Angular dev URL: http://localhost:4200. `environment.ts` points to `http://localhost:8080/api`.
 
@@ -135,7 +141,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 6. Open http://<server-ip>/. The SPA fallback in Nginx supports direct refresh of any Angular route.
 
-Set a strong `JWT_SECRET` in `/etc/default/oliveconnect` or in the systemd environment before exposing the service publicly.
+`JWT_SECRET` is required: set it in `/etc/default/oliveconnect` (e.g. `JWT_SECRET=$(openssl rand -base64 48)`), otherwise the service fails to start.
 
 ## Backup
 

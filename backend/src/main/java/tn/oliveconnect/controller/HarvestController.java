@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import tn.oliveconnect.common.web.PageRequests;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,7 +46,7 @@ public class HarvestController {
       @RequestParam(required = false) String orchardId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
-    Pageable pageable = PageRequest.of(page, size);
+    Pageable pageable = PageRequests.of(page, size);
     Page<Harvest> result = harvestService.findAll(status, from, to, orchardId, pageable);
     return PageResponse.of(result);
   }

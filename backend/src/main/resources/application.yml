@@ -36,7 +36,7 @@ management:
       version: 1.0.0
 
 jwt:
-  secret: ${JWT_SECRET:oliveconnect-local-development-secret-change-in-production}
+  secret: ${JWT_SECRET:}
   expiration-ms: 86400000
 
 imports:
