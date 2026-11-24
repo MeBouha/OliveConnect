@@ -1,67 +1,105 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
-import { Role } from '../../core/models';
+import { apiErrorMessage } from '../../shared/feedback';
+import { AuthHeroComponent } from './auth-hero.component';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, RouterLink, MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule],
+  imports: [
+    FormsModule, RouterLink, MatButtonModule, MatFormFieldModule, MatInputModule, MatIconModule,
+    MatProgressSpinnerModule, AuthHeroComponent
+  ],
+  styleUrl: './auth-layout.scss',
   template: `
-    <mat-card class="auth-card">
-      <mat-card-header><mat-card-title>Créer un compte</mat-card-title></mat-card-header>
-      <mat-card-content>
-        <mat-form-field appearance="outline"><mat-label>Nom complet</mat-label><input matInput [(ngModel)]="fullName" /></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Email</mat-label><input matInput type="email" [(ngModel)]="email" /></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Téléphone</mat-label><input matInput [(ngModel)]="phone" /></mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Mot de passe</mat-label>
-          <input matInput type="password" [(ngModel)]="password" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Rôle</mat-label>
-          <mat-select [(ngModel)]="role">
-            @for (item of roles; track item) { <mat-option [value]="item">{{ item }}</mat-option> }
-          </mat-select>
-        </mat-form-field>
-        @if (error) { <p class="error">{{ error }}</p> }
-      </mat-card-content>
-      <mat-card-actions>
-        <button mat-flat-button color="primary" (click)="submit()">S'inscrire</button>
-        <a mat-button routerLink="/login">Retour</a>
-      </mat-card-actions>
-    </mat-card>
+    <div class="auth">
+      <app-auth-hero />
+      <section class="panel">
+        <form class="form" (ngSubmit)="submit()" #registerForm="ngForm">
+          <a class="back" routerLink="/login"><mat-icon>arrow_back</mat-icon> Connexion</a>
+          <h1>Créer un compte</h1>
+          <p class="lead">Inscription réservée aux agriculteurs membres. Les autres rôles sont attribués par un administrateur.</p>
+
+          @if (error()) {
+            <div class="banner error" role="alert"><mat-icon>error</mat-icon> {{ error() }}</div>
+          }
+
+          <mat-form-field>
+            <mat-label>Nom complet</mat-label>
+            <mat-icon matPrefix>person</mat-icon>
+            <input matInput name="fullName" [(ngModel)]="fullName" required autocomplete="name" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Email</mat-label>
+            <mat-icon matPrefix>mail</mat-icon>
+            <input matInput type="email" name="email" [(ngModel)]="email" required email autocomplete="email" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Téléphone</mat-label>
+            <mat-icon matPrefix>call</mat-icon>
+            <input matInput type="tel" name="phone" [(ngModel)]="phone" placeholder="+216 20 000 000" autocomplete="tel" />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Mot de passe</mat-label>
+            <mat-icon matPrefix>lock</mat-icon>
+            <input matInput [type]="showPassword() ? 'text' : 'password'" name="password" [(ngModel)]="password"
+                   required minlength="8" autocomplete="new-password" #pwd="ngModel" />
+            <button mat-icon-button matSuffix type="button" (click)="showPassword.set(!showPassword())"
+                    [attr.aria-label]="showPassword() ? 'Masquer le mot de passe' : 'Afficher le mot de passe'">
+              <mat-icon>{{ showPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-hint>8 caractères minimum</mat-hint>
+            @if (pwd.errors?.['minlength']) { <mat-error>Au moins 8 caractères</mat-error> }
+          </mat-form-field>
+
+          <button mat-flat-button class="submit" type="submit" [disabled]="loading() || registerForm.invalid">
+            @if (loading()) { <mat-spinner diameter="20" /> } @else { Créer mon compte }
+          </button>
+
+          <p class="switch">Déjà inscrit ? <a routerLink="/login">Se connecter</a></p>
+        </form>
+      </section>
+    </div>
   `,
-  styles: [`.auth-card { max-width: 480px; margin: 40px auto; } mat-form-field { width: 100%; }`]
+  styles: [`.submit mat-spinner { margin: 0 auto; --mdc-circular-progress-active-indicator-color: #fff; } mat-form-field + mat-form-field { margin-top: 4px; }`]
 })
 export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  readonly roles: Role[] = ['FARMER', 'COLLECTION_MANAGER', 'TEAM_LEADER', 'LOGISTICS_MANAGER', 'PRESS_MANAGER'];
+  readonly loading = signal(false);
+  readonly error = signal('');
+  readonly showPassword = signal(false);
   fullName = '';
   email = '';
   phone = '';
   password = '';
-  role: Role = 'FARMER';
-  error = '';
 
   submit(): void {
+    if (this.loading()) {
+      return;
+    }
+    this.error.set('');
+    this.loading.set(true);
     this.auth.register({
-      fullName: this.fullName,
-      email: this.email,
-      phone: this.phone,
+      fullName: this.fullName.trim(),
+      email: this.email.trim(),
+      phone: this.phone.trim() || undefined,
       password: this.password,
-      role: this.role
+      role: 'FARMER'
     }).subscribe({
       next: () => this.router.navigateByUrl('/dashboard'),
-      error: () => (this.error = "Impossible de créer le compte")
+      error: error => {
+        this.loading.set(false);
+        this.error.set(apiErrorMessage(error));
+      }
     });
   }
 }

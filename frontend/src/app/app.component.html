@@ -1,36 +1,94 @@
-<mat-sidenav-container class="shell">
-  <mat-sidenav #drawer mode="over">
-    <div class="brand">OliveConnect</div>
-    <mat-nav-list>
-      <a mat-list-item routerLink="/dashboard" routerLinkActive="active" (click)="drawer.close()">Tableau de bord</a>
-      <a mat-list-item routerLink="/map" routerLinkActive="active" (click)="drawer.close()">Carte des oliveraies</a>
-      <a mat-list-item routerLink="/orchards" routerLinkActive="active" (click)="drawer.close()">Oliveraies</a>
-      <a mat-list-item routerLink="/harvests" routerLinkActive="active" (click)="drawer.close()">Récoltes</a>
-      <a mat-list-item routerLink="/alerts" routerLinkActive="active" (click)="drawer.close()">Alertes</a>
-      <a mat-list-item routerLink="/tours" routerLinkActive="active" (click)="drawer.close()">Tournées</a>
-      <a mat-list-item routerLink="/resources" routerLinkActive="active" (click)="drawer.close()">Ressources</a>
-      <a mat-list-item routerLink="/presses" routerLinkActive="active" (click)="drawer.close()">Pressoirs</a>
-      <a mat-list-item routerLink="/notifications" routerLinkActive="active" (click)="drawer.close()">Notifications</a>
-      @if (canShow(['ADMIN'])) {
-        <a mat-list-item routerLink="/admin" routerLinkActive="active" (click)="drawer.close()">Administration</a>
-      }
-      <a mat-list-item routerLink="/help" routerLinkActive="active" (click)="drawer.close()">Aide</a>
-    </mat-nav-list>
-  </mat-sidenav>
+@if (bare()) {
+  <router-outlet />
+} @else if (user()) {
+  <mat-sidenav-container class="shell" autosize>
+    <mat-sidenav #drawer class="sidebar" [mode]="isDesktop() ? 'side' : 'over'" [opened]="isDesktop()">
+      <a class="brand" routerLink="/dashboard">
+        <img src="favicon.svg" alt="" width="34" height="34" />
+        <span>OliveConnect</span>
+      </a>
 
-  <mat-sidenav-content>
-    <mat-toolbar color="primary">
-      <button mat-button (click)="drawer.toggle()">Menu</button>
+      <nav aria-label="Navigation principale">
+        @for (group of groups(); track group.label) {
+          <div class="nav-group">
+            <div class="nav-label">{{ group.label }}</div>
+            @for (item of group.items; track item.path) {
+              <a class="nav-item" [routerLink]="item.path" routerLinkActive="active"
+                 (click)="isDesktop() || drawer.close()">
+                <mat-icon>{{ item.icon }}</mat-icon>
+                <span>{{ item.label }}</span>
+                @if (item.path === '/notifications' && unreadCount() > 0) {
+                  <span class="count">{{ unreadCount() }}</span>
+                }
+              </a>
+            }
+          </div>
+        }
+      </nav>
+
+      <div class="sidebar-footer">
+        <mat-icon>calendar_month</mat-icon>
+        <div>
+          <strong>Campagne 2026–2027</strong>
+          <span>Coopérative de Sfax</span>
+        </div>
+      </div>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="content">
+      <header class="topbar">
+        @if (!isDesktop()) {
+          <button mat-icon-button (click)="drawer.toggle()" aria-label="Ouvrir le menu">
+            <mat-icon>menu</mat-icon>
+          </button>
+          <a class="brand compact" routerLink="/dashboard" aria-label="Accueil">
+            <img src="favicon.svg" alt="" width="28" height="28" />
+          </a>
+        }
+        <span class="spacer"></span>
+
+        <a mat-icon-button routerLink="/notifications" matTooltip="Notifications" aria-label="Notifications">
+          <mat-icon [matBadge]="unreadCount() || null" matBadgeSize="small" matBadgeColor="warn" aria-hidden="false">notifications</mat-icon>
+        </a>
+
+        <button class="user-button" [matMenuTriggerFor]="userMenu" aria-label="Menu utilisateur">
+          <span class="avatar">{{ initials() }}</span>
+          <span class="user-text">
+            <strong>{{ user()!.fullName }}</strong>
+            <span>{{ roleLabel() }}</span>
+          </span>
+          <mat-icon>expand_more</mat-icon>
+        </button>
+        <mat-menu #userMenu="matMenu" xPosition="before">
+          <div class="menu-header">
+            <strong>{{ user()!.fullName }}</strong>
+            <span>{{ user()!.email }}</span>
+          </div>
+          <mat-divider />
+          <a mat-menu-item routerLink="/help"><mat-icon>help</mat-icon>Aide</a>
+          <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon>Déconnexion</button>
+        </mat-menu>
+      </header>
+
+      <main>
+        <router-outlet />
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+} @else {
+  <div class="public">
+    <header class="topbar public-bar">
+      <a class="brand" routerLink="/map">
+        <img src="favicon.svg" alt="" width="30" height="30" />
+        <span>OliveConnect</span>
+      </a>
       <span class="spacer"></span>
-      @if (user(); as currentUser) {
-        <span class="user">{{ currentUser.fullName }} · {{ currentUser.role }}</span>
-        <button mat-button (click)="logout()">Déconnexion</button>
-      } @else {
-        <a mat-button routerLink="/login">Connexion</a>
-      }
-    </mat-toolbar>
+      <a mat-button routerLink="/map" routerLinkActive="active-link">Carte</a>
+      <a mat-button routerLink="/help" routerLinkActive="active-link">Aide</a>
+      <a mat-flat-button routerLink="/login">Connexion</a>
+    </header>
     <main>
       <router-outlet />
     </main>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+  </div>
+}

@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { DashboardComponent } from './dashboard.component';
 
@@ -11,7 +12,7 @@ describe('DashboardComponent', () => {
     localStorage.clear();
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideCharts(withDefaultRegisterables())]
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), provideCharts(withDefaultRegisterables())]
     }).compileComponents();
     http = TestBed.inject(HttpTestingController);
   });

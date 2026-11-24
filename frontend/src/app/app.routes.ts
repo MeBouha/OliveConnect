@@ -7,11 +7,13 @@ export const routes: Routes = [
   {
     path: 'login',
     title: 'Connexion',
+    data: { bare: true },
     loadComponent: () => import('./features/auth/login.component').then(module => module.LoginComponent)
   },
   {
     path: 'register',
     title: 'Inscription',
+    data: { bare: true },
     loadComponent: () => import('./features/auth/register.component').then(module => module.RegisterComponent)
   },
   {

@@ -71,7 +71,7 @@ export interface Harvest {
   orchardId: string;
   farmerId?: string;
   type: 'PLANNED' | 'URGENT';
-  status: 'REQUESTED' | 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'REQUESTED' | 'VALIDATED' | 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   requestedDate?: string;
   plannedDate?: string;
   actualHarvestDate?: string;
@@ -86,7 +86,7 @@ export interface Alert {
   type: string;
   description: string;
   location?: GeoJsonPoint;
-  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+  status: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED';
   createdAt?: string;
   resolvedAt?: string;
 }
@@ -170,4 +170,9 @@ export interface DashboardKpis {
   totalBinCapacityKg: number;
   binFillRate: number;
   alertsResolvedPerWeek: WeeklyAlertKpi[];
+}
+
+export interface UserSummary {
+  id: string;
+  fullName: string;
 }

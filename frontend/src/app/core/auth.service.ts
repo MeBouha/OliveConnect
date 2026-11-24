@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { Observable, of, switchMap, tap } from 'rxjs';
-import { AuthResponse, LoginRequest, MeResponse, RegisterRequest } from './models';
+import { AuthResponse, LoginRequest, MeResponse, RegisterRequest, Role } from './models';
 import { ApiService } from './api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +15,12 @@ export class AuthService {
     if (this.isLoggedIn()) {
       this.loadMe().subscribe({ error: () => this.logout() });
     }
+  }
+
+  /** True when the signed-in user has one of the given roles (ADMIN always passes). */
+  hasRole(...roles: Role[]): boolean {
+    const role = this.userState()?.role;
+    return !!role && (role === 'ADMIN' || roles.includes(role));
   }
 
   isLoggedIn(): boolean {
