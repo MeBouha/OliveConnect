@@ -23,69 +23,144 @@ docs/       French report, class diagram, OpenAPI, Postman collection, screensho
 scripts/    backup.sh and seed helpers
 ```
 
-## Quick start with Docker Compose
+## Running the app
 
-Requirements: Docker Engine 24+ with Compose v2, 4 GB RAM.
+There are two ways to run OliveConnect. **Option A (Docker)** is the quickest if Docker works on your machine. **Option B (local)** runs each part directly and is best for development.
+
+Whichever you choose, the backend fills an empty database with demo data on first start (10 users, 500 orchards around Sfax, harvests, tours, press receipts), so the app is usable immediately.
+
+### Option A — Docker Compose
+
+Requirements: Docker Engine 24+ with the Compose v2 plugin (`docker compose version` must work), 4 GB RAM.
 
 ```bash
-git clone <repository-url> OliveConnect
+git clone git@github.com:MeBouha/OliveConnect.git
 cd OliveConnect
+
+# 1. Create your .env with a random JWT secret (one-time)
 cp .env.example .env
 sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -base64 48)|" .env
+
+# 2. Build and start everything
 docker compose up --build
 ```
 
-Compose refuses to start without `JWT_SECRET`, and the backend refuses secrets shorter than 32 bytes. (When using `infra/docker-compose.yml`, put the `.env` file in `infra/`.)
+Then open **http://localhost**.
 
-- Frontend: http://localhost
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- Health: http://localhost:8080/actuator/health
-- MongoDB: `mongodb://localhost:27017/oliveconnect` (bound to 127.0.0.1 only)
+| Service | URL |
+| --- | --- |
+| Web app | http://localhost |
+| API / Swagger UI | http://localhost:8080/swagger-ui.html |
+| Health check | http://localhost:8080/actuator/health |
+| Prometheus | http://localhost:9090 |
+| MongoDB | `mongodb://localhost:27017/oliveconnect` (localhost only) |
 
-The API container seeds demo users, 500 geolocated orchards, maturity readings, tours and historical receipts on an empty database.
+Stop with `Ctrl+C`, or `docker compose down` from another terminal. Add `-v` (`docker compose down -v`) to also delete the database and get fresh demo data on the next start.
 
-### Demo accounts
+Compose refuses to start without `JWT_SECRET`, and the backend refuses secrets shorter than 32 bytes. When using `infra/docker-compose.yml` instead of the root file, put the `.env` file in `infra/`.
 
-All demo passwords use the suffix `@123` (BCrypt-hashed at seed time):
+### Option B — Local development (no Docker)
 
-| Role | Email | Password |
+**Requirements**
+
+| Tool | Version | Check with |
 | --- | --- | --- |
-| ADMIN | `admin@oliveconnect.tn` | `Admin@123` |
-| FARMER | `farmer@oliveconnect.tn` | `Farmer@123` |
-| COLLECTION_MANAGER | `manager@oliveconnect.tn` | `Manager@123` |
-| TEAM_LEADER | `leader@oliveconnect.tn` | `Leader@123` |
-| LOGISTICS_MANAGER | `logistics@oliveconnect.tn` | `Logistics@123` |
-| PRESS_MANAGER | `press@oliveconnect.tn` | `Press@123` |
+| JDK (not just a JRE) | 17 or newer (21 recommended) | `javac -version` |
+| Node.js | 20.19+ or 22.12+ | `node -v` |
+| MongoDB | 7.x, listening on `localhost:27017` | see step 1 |
 
-VISITOR uses the public map at `/map` without authentication.
+You need three terminals: one each for MongoDB, the backend and the frontend.
 
-## Local development without Docker
-
-Requirements: JDK 17+, Node 20.19+/22.12+, MongoDB 7 running on `localhost:27017`.
+**1. Start MongoDB** — pick whichever suits your machine:
 
 ```bash
-# backend
+# a) Installed as a system service (Ubuntu/Debian/Fedora package)
+sudo systemctl start mongod
+
+# b) With Docker
+docker run -d --name oliveconnect-mongo -p 127.0.0.1:27017:27017 -v oliveconnect-mongo:/data/db mongo:7.0
+
+# c) Without root or Docker: official tarball in your home directory
+mkdir -p ~/.local/mongodb ~/.local/share/oliveconnect-mongo
+curl -fsSL https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-rhel90-7.0.12.tgz | tar xz -C ~/.local/mongodb
+~/.local/mongodb/mongodb-linux-x86_64-rhel90-7.0.12/bin/mongod \
+  --dbpath ~/.local/share/oliveconnect-mongo --bind_ip 127.0.0.1 --fork \
+  --logpath ~/.local/share/oliveconnect-mongo/mongod.log
+```
+
+(For option c on Ubuntu, use the `ubuntu2204` tarball from https://www.mongodb.com/try/download/community instead of `rhel90`.)
+
+**2. Start the backend** (terminal 2):
+
+```bash
 cd backend
 ./mvnw spring-boot:run
+```
 
-# frontend (new terminal)
+Wait for `Started OliveConnectApplication` (and, on the first run, `Seed completed: ...`). The API is now on http://localhost:8080. `spring-boot:run` activates the `dev` profile, which supplies a local-only JWT secret, so no `.env` is needed here.
+
+**3. Start the frontend** (terminal 3):
+
+```bash
 cd frontend
-npm ci
+npm ci          # first time only, or after package.json changes
 npx ng serve
 ```
 
-`spring-boot:run` activates the `dev` profile, which supplies a local-only JWT secret. Packaged jars (Docker, systemd) have no default and require `JWT_SECRET`.
+**4. Open http://localhost:4200** and click one of the demo accounts on the login page.
 
-Angular dev URL: http://localhost:4200. `environment.ts` points to `http://localhost:8080/api`.
+**Stopping:** press `Ctrl+C` in the backend and frontend terminals. Stop MongoDB with `sudo systemctl stop mongod`, `docker stop oliveconnect-mongo`, or (tarball) `~/.local/mongodb/mongodb-linux-x86_64-rhel90-7.0.12/bin/mongod --dbpath ~/.local/share/oliveconnect-mongo --shutdown`.
 
-## Verification
+### Demo accounts
+
+The login page has one-click buttons for each role. The credentials are:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Administrator | `admin@oliveconnect.tn` | `Admin@123` |
+| Farmer | `farmer@oliveconnect.tn` | `Farmer@123` |
+| Collection manager | `manager@oliveconnect.tn` | `Manager@123` |
+| Team leader | `leader@oliveconnect.tn` | `Leader@123` |
+| Logistics manager | `logistics@oliveconnect.tn` | `Logistics@123` |
+| Press manager | `press@oliveconnect.tn` | `Press@123` |
+
+Visitors can open the public map at `/map` without signing in. New farmers can self-register at `/register`; other roles are assigned by an administrator.
+
+A typical walkthrough: **farmer** requests a harvest → **collection manager** clicks *Planifier* on it to create a tour → **team leader** starts the tour → **press manager** records the receipt → **team leader** completes the tour → the farmer sees it as *Terminée* with the weighed quantity.
+
+### Resetting the demo data
+
+Seeding only happens when the database is empty. To start over, stop the backend, drop the database, and start the backend again:
+
+```bash
+mongosh oliveconnect --eval 'db.dropDatabase()'      # if mongosh is installed
+docker compose down -v                               # Docker Compose setup
+rm -rf ~/.local/share/oliveconnect-mongo/*           # tarball setup (stop mongod first)
+```
+
+### Troubleshooting
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `release version 17 not supported` or `which: no javac` | Only a Java runtime (JRE) is installed, or it is too new for Lombok. Install a JDK 17–21, e.g. `sudo dnf install java-21-openjdk-devel` / `sudo apt install openjdk-21-jdk`, or unpack a [Temurin](https://adoptium.net) JDK and set `JAVA_HOME` to it. |
+| `./mvnw: Permission denied` | Run `chmod +x backend/mvnw`. |
+| `JWT_SECRET must be set to at least 32 bytes` | You ran the packaged jar without a secret. Use `./mvnw spring-boot:run` for development, or export `JWT_SECRET=$(openssl rand -base64 48)`. |
+| `Set JWT_SECRET in .env` from Docker Compose | Create `.env` as shown in Option A, step 1. |
+| `docker compose`: unknown command / permission denied on `docker.sock` | Install the Compose plugin (`docker-compose-plugin`) and add yourself to the `docker` group (`sudo usermod -aG docker $USER`, then log out and back in). |
+| Backend fails with a MongoDB connection error | MongoDB is not running on `localhost:27017` — see step 1. |
+| Login page says "Serveur injoignable" | The backend is not running or not on port 8080. |
+| `Port 4200 is already in use` | Another `ng serve` is running; stop it or use `npx ng serve --port 4300`. |
+| Frontend tests: `No binary for ChromeHeadless` | Set `CHROME_BIN` to a Chrome/Chromium binary, e.g. `export CHROME_BIN=$(which chromium-browser)`. Without a system Chrome: `npx @puppeteer/browsers install chrome-headless-shell@stable` and point `CHROME_BIN` at the downloaded binary. |
+| Icons show as words (e.g. "map") or fonts look plain | Fonts and icons load from Google Fonts; the browser needs internet access. |
+
+## Running the tests
 
 ```bash
 cd backend && ./mvnw verify
-cd frontend && npm ci && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox --code-coverage && npx ng build --configuration production
+cd frontend && npx ng test --watch=false --browsers=ChromeHeadlessNoSandbox && npx ng build --configuration production
 ```
 
-Backend unit tests use Mockito and do not require Docker. Frontend unit tests require Chrome/Chromium and use the `ChromeHeadlessNoSandbox` launcher from `karma.conf.js`. Cypress e2e requires the app to be running; install the Cypress binary first because the repository lockfile is generated with binary download skipped in this environment:
+Backend unit tests use Mockito and need neither MongoDB nor Docker. Frontend unit tests need Chrome/Chromium (see `CHROME_BIN` above). Cypress end-to-end tests need the app running and the Cypress binary installed:
 
 ```bash
 cd frontend && npx cypress install && npm run e2e
@@ -109,7 +184,7 @@ sudo systemctl enable --now mongod
 ```bash
 cd backend && ./mvnw clean package -DskipTests
 sudo mkdir -p /opt/oliveconnect
-sudo cp target/oliveconnect-*.jar /opt/oliveconnect/app.jar
+sudo cp target/oliveconnect.jar /opt/oliveconnect/app.jar
 ```
 
 3. Install the systemd service:
@@ -163,7 +238,7 @@ mongorestore --gzip --db oliveconnect --drop /var/backups/oliveconnect/<archive>
 - `GET /actuator/metrics` — JVM and HTTP metrics.
 - `GET /actuator/prometheus` — Prometheus exposition format.
 - Compose service `prometheus` at http://localhost:9090 — scrapes the backend every 15 seconds using `infra/prometheus.yml`.
-- Admin UI at `/admin/status` — uptime, heap and request count, sourced from Spring Actuator through the authenticated backend.
+- Admin page at `/admin` — MongoDB status, uptime, heap and request count, served by the authenticated `GET /api/admin/status` endpoint.
 
 ## Documentation
 
